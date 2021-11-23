@@ -14,6 +14,6 @@ internal class UMWarszawaApiService(
         val tasks =
             (0..pageCount).map { executor.submit<List<Tree>> { return@submit umWarszawaApiClient.fetchTrees(it) } }
 
-        return tasks.stream().map { it.get() }.collect(Collectors.toList()).flatten()
+        return tasks.stream().map { it.get() }.collect(Collectors.toList()).flatten().distinct()
     }
 }

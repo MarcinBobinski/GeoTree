@@ -13,7 +13,7 @@ internal class TreeRefreshDataScheduler(
 
     // Every Hour
     @Scheduled(fixedDelay = 3_600_000)
-    fun task(){
+    fun task() {
         treeService.refreshData()
     }
 }

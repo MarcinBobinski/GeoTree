@@ -15,12 +15,15 @@ internal class UMWarszawaApiHttpClient(
     private val restTemplate: RestTemplate,
 ) : UMWarszawaApiClient {
     override fun fetchTrees(page: Int): List<Tree> {
+        val ids =
+            (((page * umWarszawaApiProperties.pageSize) + 1)..(((page + 1) * umWarszawaApiProperties.pageSize) + 1)).toList()
+
         val uri = UriComponentsBuilder
             .fromUriString(umWarszawaApiProperties.url)
             .path("/api/action/datastore_search/")
             .queryParam("resource_id", umWarszawaApiProperties.resourceId)
             .queryParam("limit", umWarszawaApiProperties.pageSize)
-            .queryParam("offset", umWarszawaApiProperties.pageSize * page)
+            .queryParam("filters", "{\"_id\":${ids}}")
             .toUriString()
 
         val request = RequestEntity.get(URI(uri)).build()
@@ -32,9 +35,9 @@ internal class UMWarszawaApiHttpClient(
 
             response.body!!.result.records.map { it.toTree() }
         } catch (e: HttpClientErrorException) {
-            return listOf()
+            throw e
         } catch (e: Exception) {
-            return listOf()
+            throw e
         }
     }
 
