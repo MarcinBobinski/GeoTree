@@ -7,13 +7,13 @@ import org.springframework.stereotype.Component
 
 @Component
 @EnableScheduling
-class TreeRefreshDataScheduler(
+internal class TreeRefreshDataScheduler(
     private val treeService: TreeService
 ) {
 
     // Every Hour
     @Scheduled(fixedDelay = 3_600_000)
     fun task(){
-        //treeService.refreshData()
+        treeService.refreshData()
     }
 }
