@@ -1,0 +1,6 @@
+# TF2 Object detection API
+/models
+
+# .idea:
+.idea/workspace.xml
+.idea/vcs.xml
