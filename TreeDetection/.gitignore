@@ -1,6 +1,14 @@
 # TF2 Object detection API
 /models
 
+
+/Dataset
+/data
+/pretrained_models
+
 # .idea:
 .idea/workspace.xml
 .idea/vcs.xml
+
+
+/.ipynb_checkpoints
