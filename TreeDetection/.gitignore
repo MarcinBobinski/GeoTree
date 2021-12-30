@@ -1,6 +1,9 @@
 # TF2 Object detection API
 /models
 
+# Trained models
+/my_model1
+/my_model2
 
 /Dataset
 /data

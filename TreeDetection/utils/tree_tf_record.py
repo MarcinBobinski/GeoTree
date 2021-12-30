@@ -43,7 +43,7 @@ def create_tf_record_from_labelme_xml(dir, output_path, num_shards):
                 xmin, ymin, xmax, ymax = None, None, None, None
                 segmentation = []
                 for point in object.iter("pt"):
-                    x, y = int(point.find("x").text), int(point.find("y").text)
+                    x, y = float(point.find("x").text), float(point.find("y").text)
 
                     if xmin is None:
                         xmin = x
@@ -71,7 +71,7 @@ def create_tf_record_from_labelme_xml(dir, output_path, num_shards):
                         "segmentation": [segmentation],
                         "iscrowd": 0,
                         "category_id": 1,
-                        "area": w * h,
+                        "area": float(w * h),
                         "id": idy + 1
                     }
                 )
