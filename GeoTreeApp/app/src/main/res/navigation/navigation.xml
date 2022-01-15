@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/navigation"
+    app:startDestination="@id/cameraDetectionFragment">
+
+    <fragment
+        android:id="@+id/cameraDetectionFragment"
+        android:name="com.example.geotreeapp.screens.camera_detection.CameraDetectionFragment"
+        android:label="camera_detection_fragment"
+        tools:layout="@layout/camera_detection_fragment" >
+        <action
+            android:id="@+id/action_cameraDetectionFragment_to_settingsFragment"
+            app:destination="@id/settingsFragment" />
+        <action
+            android:id="@+id/action_cameraDetectionFragment_to_treeMapFragment"
+            app:destination="@id/treeMapFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.example.geotreeapp.screens.settings.SettingsFragment"
+        android:label="settings_fragment"
+        tools:layout="@layout/settings_fragment" />
+    <fragment
+        android:id="@+id/treeMapFragment"
+        android:name="com.example.geotreeapp.screens.tree_map.TreeMapFragment"
+        android:label="tree_map_fragment"
+        tools:layout="@layout/tree_map_fragment" />
+</navigation>
