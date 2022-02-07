@@ -2,7 +2,6 @@ package com.example.geotreeapp.screens.camera_detection
 
 import android.Manifest
 import android.content.pm.PackageManager
-import androidx.lifecycle.ViewModelProvider
 import android.os.Bundle
 import android.util.Size
 import androidx.fragment.app.Fragment
@@ -16,6 +15,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.Navigation
 import com.example.geotreeapp.R
 import com.example.geotreeapp.databinding.CameraDetectionFragmentBinding
@@ -26,7 +26,6 @@ import java.lang.Exception
 import java.util.concurrent.Executors
 
 class CameraDetectionFragment : Fragment() {
-
     companion object {
         private val REQUIRED_PERMISSIONS = arrayOf(Manifest.permission.CAMERA)
         private const val PERMISSIONS_REQUEST_CODE = 123
@@ -36,6 +35,11 @@ class CameraDetectionFragment : Fragment() {
     private lateinit var viewModel: CameraDetectionViewModel
 
     private lateinit var treeImageAnalyzer: TreeImageAnalyzer
+
+    override fun onActivityCreated(savedInstanceState: Bundle?) {
+        super.onActivityCreated(savedInstanceState)
+        viewModel = ViewModelProvider(this).get(CameraDetectionViewModel::class.java)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -52,7 +56,6 @@ class CameraDetectionFragment : Fragment() {
         )
         binding.treeDetectionDrawingSurface.setZOrderOnTop(true)
 
-
         val treeDetectionModel = TreeDetectionModel(requireContext())
         treeImageAnalyzer =
             TreeImageAnalyzer(treeDetectionModel, binding.treeDetectionDrawingSurface)
@@ -68,12 +71,6 @@ class CameraDetectionFragment : Fragment() {
         }
 
         return binding.root
-    }
-
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-        viewModel = ViewModelProvider(this).get(CameraDetectionViewModel::class.java)
-        // TODO: Use the ViewModel
     }
 
     override fun onRequestPermissionsResult(
@@ -93,7 +90,6 @@ class CameraDetectionFragment : Fragment() {
                 requireActivity().finish()
             }
         }
-
     }
 
     private fun areAllPermissionsGranted() = REQUIRED_PERMISSIONS.all {
@@ -136,5 +132,4 @@ class CameraDetectionFragment : Fragment() {
             }
         }, ContextCompat.getMainExecutor(requireContext()))
     }
-
 }

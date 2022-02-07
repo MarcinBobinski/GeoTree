@@ -1,32 +1,102 @@
 package com.example.geotreeapp.screens.settings
 
-import androidx.lifecycle.ViewModelProvider
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.IBinder
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.navigation.Navigation
 import com.example.geotreeapp.R
+import com.example.geotreeapp.databinding.SettingsFragmentBinding
+import com.example.geotreeapp.sensors.OrientationService
+import com.example.geotreeapp.tree.TreeService
 
 class SettingsFragment : Fragment() {
 
-    companion object {
-        fun newInstance() = SettingsFragment()
-    }
+    private lateinit var binding: SettingsFragmentBinding
 
-    private lateinit var viewModel: SettingsViewModel
+    private var treeService: TreeService? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.settings_fragment, container, false)
-    }
+    ): View {
+        binding = SettingsFragmentBinding.inflate(inflater, container, false)
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
-        viewModel = ViewModelProvider(this).get(SettingsViewModel::class.java)
-        // TODO: Use the ViewModel
-    }
+        binding.back.setOnClickListener(Navigation.createNavigateOnClickListener(R.id.action_settingsFragment_to_cameraDetectionFragment))
 
+//        binding.update.setOnClickListener { treeServiceViewModel.updateData() }
+        binding.update.setOnClickListener {
+            treeService?.updateData()
+        }
+
+
+//        var gpsService: GpsService? = null
+//        var gpsBound  = false
+//        val connection = object :ServiceConnection{
+//            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+//                gpsBound = true
+//                gpsService = (service as GpsService.GpsServiceBinder).getService()
+//                gpsService?.run {
+//                    if(!checkPermissions()){
+//                        requirePermissions(requireActivity())
+//                    }
+//                    this.startGPS()
+//                }
+//            }
+//
+//            override fun onServiceDisconnected(name: ComponentName?) {
+//                gpsBound = false
+//            }
+//
+//        }
+//
+//        requireActivity().run {
+//            Intent(this, GpsService::class.java).also { intent ->
+//                this.bindService(intent, connection, Context.BIND_AUTO_CREATE)
+//            }
+//        }
+
+
+        val treeServiceConnection = object: ServiceConnection{
+            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                treeService = (service as TreeService.TreeServiceBinder).getService()
+            }
+
+            override fun onServiceDisconnected(name: ComponentName?) {
+            }
+
+        }
+        requireActivity().run {
+            Intent(this, TreeService::class.java).also {
+                this.bindService(it, treeServiceConnection, Context.BIND_AUTO_CREATE)
+            }
+        }
+
+        var orientationService: OrientationService?
+        var orientationBound = false
+        val orientationConnction = object : ServiceConnection{
+            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                orientationService = (service as OrientationService.OrientationServiceBinder).getService()
+                orientationService!!.startOrientationUpdates()
+            }
+
+            override fun onServiceDisconnected(name: ComponentName?) {
+            }
+        }
+        requireActivity().run {
+            Intent(this, OrientationService::class.java).also { intent ->
+                this.bindService(intent, orientationConnction, Context.BIND_AUTO_CREATE)
+            }
+        }
+
+
+
+        return binding.root
+    }
 }

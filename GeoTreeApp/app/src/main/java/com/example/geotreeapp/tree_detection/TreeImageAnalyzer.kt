@@ -3,6 +3,8 @@ package com.example.geotreeapp.tree_detection
 import android.graphics.Bitmap
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import com.example.geotreeapp.base.rotate
 import com.example.geotreeapp.base.toBitmap
 import com.example.geotreeapp.screens.camera_detection.TreeDetectionDrawingSurface
@@ -16,6 +18,9 @@ class TreeImageAnalyzer(
     private val treeDetectionDrawingSurface: TreeDetectionDrawingSurface
 ) : ImageAnalysis.Analyzer {
     private var isProcessing = false
+    private val _treeBoxes: MutableLiveData<List<TreeBox>> = MutableLiveData()
+    val treeBoxes: LiveData<List<TreeBox>>
+        get() = _treeBoxes
 
     override fun analyze(imageProxy: ImageProxy) {
         if (isProcessing) {
@@ -43,6 +48,7 @@ class TreeImageAnalyzer(
             val treeBoxes = treeDetectionModel.inference(inputImage)
             withContext(Dispatchers.Main) {
                 isProcessing = false
+                _treeBoxes.value = treeBoxes
                 treeDetectionDrawingSurface.treeBoxes = treeBoxes
                 treeDetectionDrawingSurface.invalidate()    // Call onDraw
             }

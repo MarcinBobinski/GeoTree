@@ -9,11 +9,6 @@ import android.view.ViewGroup
 import com.example.geotreeapp.R
 
 class TreeMapFragment : Fragment() {
-
-    companion object {
-        fun newInstance() = TreeMapFragment()
-    }
-
     private lateinit var viewModel: TreeMapViewModel
 
     override fun onCreateView(

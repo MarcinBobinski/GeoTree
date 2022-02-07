@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 import cv2
 
 
-def create_tf_record_from_labelme_xml(dir, output_path, num_shards):
+def create_tf_record_from_labelme_xml(dir, output_path, num_shards, mask: bool = True):
     annotations = []
     for file in os.listdir(dir):
         if file.endswith(".xml"):
@@ -77,7 +77,7 @@ def create_tf_record_from_labelme_xml(dir, output_path, num_shards):
                 )
 
             (_, tf_example, num_annotations_skipped, _, _) = create_tf_example(
-                image_json, annotations_json, dir, category_index, True
+                image_json, annotations_json, dir, category_index, mask
             )
 
             total_num_annotations_skipped += num_annotations_skipped

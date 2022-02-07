@@ -21,7 +21,13 @@
         android:id="@+id/settingsFragment"
         android:name="com.example.geotreeapp.screens.settings.SettingsFragment"
         android:label="settings_fragment"
-        tools:layout="@layout/settings_fragment" />
+        tools:layout="@layout/settings_fragment" >
+        <action
+            android:id="@+id/action_settingsFragment_to_cameraDetectionFragment"
+            app:destination="@id/cameraDetectionFragment"
+            app:popUpTo="@id/cameraDetectionFragment"
+            app:popUpToInclusive="false" />
+    </fragment>
     <fragment
         android:id="@+id/treeMapFragment"
         android:name="com.example.geotreeapp.screens.tree_map.TreeMapFragment"
