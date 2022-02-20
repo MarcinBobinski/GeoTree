@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 import cv2
 
 
-def create_tf_record_from_labelme_xml(dir, output_path, num_shards, mask: bool = True):
+def create_tf_record_from_xml(dir, output_path, num_shards, mask: bool = True):
     annotations = []
     for file in os.listdir(dir):
         if file.endswith(".xml"):
@@ -64,6 +64,12 @@ def create_tf_record_from_labelme_xml(dir, output_path, num_shards, mask: bool =
 
                     segmentation.append(x)
                     segmentation.append(y)
+
+                for box in object.iter("bndbox"):
+                    xmin = float(box.find("xmin").text)
+                    ymin = float(box.find("ymin").text)
+                    xmax = float(box.find("xmax").text)
+                    ymax = float(box.find("ymax").text)
 
                 annotations_json.append(
                     {

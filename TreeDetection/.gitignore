@@ -2,8 +2,7 @@
 /models
 
 # Trained models
-/my_model1
-/my_model2
+/my_model*
 
 /Dataset
 /data

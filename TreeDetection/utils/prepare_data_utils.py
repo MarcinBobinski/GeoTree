@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 import shutil
 
 
-def filterAndPrepareData(path, dirName, select, exclude):
+def filterAndPrepareDataFromLabelMe(path, dirName, select, exclude):
     delete_list = []
     rename_dict = {}
 
@@ -62,6 +62,53 @@ def filterAndPrepareData(path, dirName, select, exclude):
             file.replace("Annotations", "Images").replace("xml", "jpg"),
             rename_dict[file].replace("Annotations", "Images").replace("xml", "jpg")
         )
+
+def filterAndPrepareDataFromOI(path, select, rename = None):
+    delete_list = []
+
+    for rootOfFile, _, files in os.walk(path):
+        for _file in files:
+            if not str(_file).endswith(".xml"):
+                continue
+            try:
+                tree = ET.parse(os.path.join(rootOfFile, _file))
+                root = tree.getroot()
+
+                contain_group = False
+                for obj in root.findall("object"):
+                    if obj.find("group").text == '1' and obj.find("name").text in select:
+                        delete_list.append(os.path.join(rootOfFile, _file))
+                        contain_group = True
+                        break
+                if contain_group: continue
+
+                obj_to_delete = []
+                num_of_objects = 0
+                for obj in root.findall("object"):
+                    num_of_objects += 1
+                    if obj.find("name").text not in select:
+                        obj_to_delete.append(obj)
+                    else:
+                        if rename is not None:
+                            obj.find("name").text = rename
+
+
+                if len(obj_to_delete) == num_of_objects:
+                    delete_list.append(os.path.join(rootOfFile, _file))
+                    continue
+
+                for obj in obj_to_delete:
+                    root.remove(obj)
+
+                tree.write(os.path.join(rootOfFile, _file))
+
+            except Exception:
+                delete_list.append(os.path.join(rootOfFile, _file))
+
+    for file in delete_list:
+        os.remove(file)
+        os.remove(file.replace("xml", "jpg"))
+
 
 def flatten(destination):
     all_files = []
