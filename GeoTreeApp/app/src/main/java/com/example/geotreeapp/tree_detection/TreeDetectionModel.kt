@@ -17,14 +17,14 @@ import timber.log.Timber
 
 class TreeDetectionModel(context: Context) {
     companion object {
-        private const val MODEL_NAME = "tree_detection_model.tflite"
+        private const val MODEL_NAME = "model.tflite"
         private const val THREADS_NUM = 4
 
         private const val INPUT_IMAGE_SIZE = 640
         private val INPUT_DATA_TYPE = DataType.FLOAT32
 
-        private const val MAX_NUM_DETECTIONS = 10
-        private const val MIN_CONFIDENCE = 0.7f
+        private const val MAX_NUM_DETECTIONS = 25
+        private const val MIN_CONFIDENCE = 0.2f
     }
 
     private val inputImageProcessor = ImageProcessor.Builder()
@@ -62,6 +62,20 @@ class TreeDetectionModel(context: Context) {
             0 to scores.buffer,
             2 to detectionNum.buffer
         )
+
+//        val outputs = mapOf(
+//            0 to boxes.buffer,
+//            1 to classes.buffer,
+//            2 to scores.buffer,
+//            3 to detectionNum.buffer
+//        )
+//
+//        val outputs = mapOf(
+//            1 to boxes.buffer,
+//            3 to classes.buffer,
+//            2 to scores.buffer,
+//            0 to detectionNum.buffer
+//        )
 
         val tensorImage = TensorImage.fromBitmap(inputImage).let { inputImageProcessor.process(it) }
 
