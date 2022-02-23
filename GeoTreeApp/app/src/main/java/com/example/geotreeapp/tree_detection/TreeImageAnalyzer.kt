@@ -7,20 +7,19 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.geotreeapp.base.rotate
 import com.example.geotreeapp.base.toBitmap
-import com.example.geotreeapp.screens.camera_detection.TreeDetectionDrawingSurface
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class TreeImageAnalyzer(
-    private val treeDetectionModel: TreeDetectionModel,
-    private val treeDetectionDrawingSurface: TreeDetectionDrawingSurface
+    private val treeDetectionModel: TreeDetectionModel
 ) : ImageAnalysis.Analyzer {
     private var isProcessing = false
-    private val _treeBoxes: MutableLiveData<List<TreeBox>> = MutableLiveData()
-    val treeBoxes: LiveData<List<TreeBox>>
-        get() = _treeBoxes
+
+    private val _detectionPayload: MutableLiveData<DetectionPayload> = MutableLiveData()
+    val detectionPayload: LiveData<DetectionPayload>
+        get() = _detectionPayload
 
     override fun analyze(imageProxy: ImageProxy) {
         if (isProcessing) {
@@ -34,10 +33,6 @@ class TreeImageAnalyzer(
              it.toBitmap().rotate(imageProxy.imageInfo.rotationDegrees.toFloat())
         }
 
-        if (!treeDetectionDrawingSurface.isTransformInitialized) {
-            treeDetectionDrawingSurface.transformInit(imageBitmap.height, imageBitmap.width)
-        }
-
         CoroutineScope(Dispatchers.Default).launch {
             runInference(imageBitmap)
         }
@@ -45,14 +40,23 @@ class TreeImageAnalyzer(
 
     private suspend fun runInference(inputImage: Bitmap) {
         withContext(Dispatchers.Default) {
-            val treeBoxes = treeDetectionModel.inference(inputImage)
+            val inferenceResult = treeDetectionModel.inference(inputImage)
             withContext(Dispatchers.Main) {
                 isProcessing = false
-                _treeBoxes.value = treeBoxes
-                treeDetectionDrawingSurface.treeBoxes = treeBoxes
-                treeDetectionDrawingSurface.invalidate()    // Call onDraw
+                _detectionPayload.value = DetectionPayload(
+                    inferenceResult.detections,
+                    inputImage.height,
+                    inputImage.width,
+                    inferenceResult.inferenceTime
+                )
             }
         }
     }
-
 }
+
+data class DetectionPayload(
+    val detections: List<TreeDetection>,
+    val imageHeight: Int,
+    val imageWidth: Int,
+    val inferenceTime: Long
+)

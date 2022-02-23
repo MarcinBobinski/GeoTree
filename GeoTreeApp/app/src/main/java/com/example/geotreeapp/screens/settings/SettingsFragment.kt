@@ -10,10 +10,10 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.lifecycle.Observer
 import androidx.navigation.Navigation
 import com.example.geotreeapp.R
 import com.example.geotreeapp.databinding.SettingsFragmentBinding
-import com.example.geotreeapp.sensors.OrientationService
 import com.example.geotreeapp.tree.TreeService
 
 class SettingsFragment : Fragment() {
@@ -30,10 +30,30 @@ class SettingsFragment : Fragment() {
 
         binding.back.setOnClickListener(Navigation.createNavigateOnClickListener(R.id.action_settingsFragment_to_cameraDetectionFragment))
 
-//        binding.update.setOnClickListener { treeServiceViewModel.updateData() }
         binding.update.setOnClickListener {
             treeService?.updateData()
         }
+
+        val treeServiceConnection = object: ServiceConnection{
+            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                treeService = (service as TreeService.TreeServiceBinder).getService()
+
+                treeService!!.treesNumber.observe(
+                    this@SettingsFragment.viewLifecycleOwner,
+                    Observer<Long> {
+                        this@SettingsFragment.binding.treesAmount.text = it.toString()
+                    }
+                )
+            }
+            override fun onServiceDisconnected(name: ComponentName?) {
+            }
+        }
+        requireActivity().run {
+            Intent(this, TreeService::class.java).also {
+                this.bindService(it, treeServiceConnection, Context.BIND_AUTO_CREATE)
+            }
+        }
+
 
 
 //        var gpsService: GpsService? = null
@@ -63,37 +83,26 @@ class SettingsFragment : Fragment() {
 //        }
 
 
-        val treeServiceConnection = object: ServiceConnection{
-            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                treeService = (service as TreeService.TreeServiceBinder).getService()
-            }
 
-            override fun onServiceDisconnected(name: ComponentName?) {
-            }
 
-        }
-        requireActivity().run {
-            Intent(this, TreeService::class.java).also {
-                this.bindService(it, treeServiceConnection, Context.BIND_AUTO_CREATE)
-            }
-        }
 
-        var orientationService: OrientationService?
-        var orientationBound = false
-        val orientationConnction = object : ServiceConnection{
-            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                orientationService = (service as OrientationService.OrientationServiceBinder).getService()
-                orientationService!!.startOrientationUpdates()
-            }
 
-            override fun onServiceDisconnected(name: ComponentName?) {
-            }
-        }
-        requireActivity().run {
-            Intent(this, OrientationService::class.java).also { intent ->
-                this.bindService(intent, orientationConnction, Context.BIND_AUTO_CREATE)
-            }
-        }
+//        var orientationService: OrientationService?
+//        var orientationBound = false
+//        val orientationConnction = object : ServiceConnection{
+//            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+//                orientationService = (service as OrientationService.OrientationServiceBinder).getService()
+//                orientationService!!.startOrientationUpdates()
+//            }
+//
+//            override fun onServiceDisconnected(name: ComponentName?) {
+//            }
+//        }
+//        requireActivity().run {
+//            Intent(this, OrientationService::class.java).also { intent ->
+//                this.bindService(intent, orientationConnction, Context.BIND_AUTO_CREATE)
+//            }
+//        }
 
 
 

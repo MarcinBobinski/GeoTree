@@ -15,10 +15,12 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.Navigation
 import com.example.geotreeapp.R
 import com.example.geotreeapp.databinding.CameraDetectionFragmentBinding
+import com.example.geotreeapp.tree_detection.DetectionPayload
 import com.example.geotreeapp.tree_detection.TreeImageAnalyzer
 import com.example.geotreeapp.tree_detection.TreeDetectionModel
 import timber.log.Timber
@@ -48,18 +50,28 @@ class CameraDetectionFragment : Fragment() {
     ): View {
         binding = CameraDetectionFragmentBinding.inflate(inflater, container, false)
 
-        binding.btnSettings.setOnClickListener(
-            Navigation.createNavigateOnClickListener(R.id.action_cameraDetectionFragment_to_settingsFragment)
-        )
-        binding.btnTreeMap.setOnClickListener(
-            Navigation.createNavigateOnClickListener(R.id.action_cameraDetectionFragment_to_treeMapFragment)
-        )
-        binding.treeDetectionDrawingSurface.setZOrderOnTop(true)
+        initializeGuiBindings()
 
-        val treeDetectionModel = TreeDetectionModel(requireContext())
-        treeImageAnalyzer =
-            TreeImageAnalyzer(treeDetectionModel, binding.treeDetectionDrawingSurface)
+        treeImageAnalyzer = TreeImageAnalyzer(TreeDetectionModel(requireContext()))
 
+        val detectionObserver = Observer<DetectionPayload> { payload ->
+            binding.treeDetectionDrawingSurface.let {
+                if (!it.isTransformInitialized) {
+                    it.transformInit(payload.imageHeight, payload.imageWidth)
+                }
+                it.treeDetections = payload.detections
+                it.invalidate()
+            }
+        }
+
+        treeImageAnalyzer.detectionPayload.observe(viewLifecycleOwner, detectionObserver)
+
+        initializeCamera()
+
+        return binding.root
+    }
+
+    private fun initializeCamera() {
         if (areAllPermissionsGranted()) {
             startCamera()
         } else {
@@ -69,8 +81,6 @@ class CameraDetectionFragment : Fragment() {
                 PERMISSIONS_REQUEST_CODE
             )
         }
-
-        return binding.root
     }
 
     override fun onRequestPermissionsResult(
@@ -131,5 +141,15 @@ class CameraDetectionFragment : Fragment() {
                 Timber.e("Failed to start camera", e)
             }
         }, ContextCompat.getMainExecutor(requireContext()))
+    }
+
+    private fun initializeGuiBindings() {
+        binding.btnSettings.setOnClickListener(
+            Navigation.createNavigateOnClickListener(R.id.action_cameraDetectionFragment_to_settingsFragment)
+        )
+        binding.btnTreeMap.setOnClickListener(
+            Navigation.createNavigateOnClickListener(R.id.action_cameraDetectionFragment_to_treeMapFragment)
+        )
+        binding.treeDetectionDrawingSurface.setZOrderOnTop(true)
     }
 }

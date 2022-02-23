@@ -1,12 +1,13 @@
 package com.example.geotreeapp.screens.camera_detection
 
+import android.app.Application
 import android.location.Location
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import com.example.geotreeapp.tree.tree_db.infrastructure.Tree
 
-class CameraDetectionViewModel(): ViewModel() {
+class CameraDetectionViewModel(application: Application): AndroidViewModel(application) {
 
     private val _expectedNumberOfTrees: MutableLiveData<Int> = MutableLiveData(0)
     val expectedNumberOfTrees: LiveData<Int>
@@ -18,6 +19,10 @@ class CameraDetectionViewModel(): ViewModel() {
         orientation: Double,
         distance: Double
     ) {
+
+    }
+
+    init {
 
     }
 
