@@ -38,12 +38,9 @@ class SettingsFragment : Fragment() {
             override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
                 treeService = (service as TreeService.TreeServiceBinder).getService()
 
-                treeService!!.treesNumber.observe(
-                    this@SettingsFragment.viewLifecycleOwner,
-                    Observer<Long> {
-                        this@SettingsFragment.binding.treesAmount.text = it.toString()
-                    }
-                )
+                treeService!!.treesNumber.observe(this@SettingsFragment.viewLifecycleOwner) {
+                    this@SettingsFragment.binding.treesAmount.text = it.toString()
+                }
             }
             override fun onServiceDisconnected(name: ComponentName?) {
             }

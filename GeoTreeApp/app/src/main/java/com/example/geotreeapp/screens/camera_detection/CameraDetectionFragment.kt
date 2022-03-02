@@ -1,9 +1,14 @@
 package com.example.geotreeapp.screens.camera_detection
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraManager
 import android.os.Bundle
 import android.util.Size
+import android.util.SizeF
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -38,10 +43,34 @@ class CameraDetectionFragment : Fragment() {
 
     private lateinit var treeImageAnalyzer: TreeImageAnalyzer
 
+    // Camera properties
+    private var focalLength: Float? = null
+    private var sensorSize: SizeF? = null
+
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProvider(this).get(CameraDetectionViewModel::class.java)
+
+        if (!CameraDetectionViewModel.checkPermissions(requireContext())){
+            CameraDetectionViewModel.let {
+                ActivityCompat.requestPermissions(
+                    requireActivity(),
+                    it.REQUIRED_PERMISSIONS,
+                    it.PERMISSIONS_REQUEST_CODE
+                )
+            }
+        } else {
+            viewModel.initializeServices()
+        }
+
+        viewModel.expectedNTreesPayload.observe(viewLifecycleOwner) {
+            it?:return@observe
+            binding.expected.text = "t: ${it.amount} \n o: ${it.orientation} \n x: ${it.location.longitude} \n y: ${it.location.latitude}"
+        }
+
     }
+
+
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -52,9 +81,13 @@ class CameraDetectionFragment : Fragment() {
 
         initializeGuiBindings()
 
+        initializeCameraProperties()
+
         treeImageAnalyzer = TreeImageAnalyzer(TreeDetectionModel(requireContext()))
 
         val detectionObserver = Observer<DetectionPayload> { payload ->
+
+            var drawingTime = System.currentTimeMillis()
             binding.treeDetectionDrawingSurface.let {
                 if (!it.isTransformInitialized) {
                     it.transformInit(payload.imageHeight, payload.imageWidth)
@@ -62,6 +95,24 @@ class CameraDetectionFragment : Fragment() {
                 it.treeDetections = payload.detections
                 it.invalidate()
             }
+            drawingTime = System.currentTimeMillis() - drawingTime
+            Timber.i("Drawing time: $drawingTime ms.")
+
+            val isPortrait = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
+
+            var expectedNumberOfTreesTime = System.currentTimeMillis()
+            viewModel.updateExpectedNumberOfTrees(
+                UpdateExpectedNumberOfTreesInput(
+                    5.0,
+                    focalLength,
+                    sensorSize,
+                    payload.imageWidth,
+                    payload.imageHeight,
+                    isPortrait
+                    )
+            )
+            expectedNumberOfTreesTime = System.currentTimeMillis() - expectedNumberOfTreesTime
+            Timber.i("Expecting number of trees time: $expectedNumberOfTreesTime ms.")
         }
 
         treeImageAnalyzer.detectionPayload.observe(viewLifecycleOwner, detectionObserver)
@@ -90,7 +141,24 @@ class CameraDetectionFragment : Fragment() {
     ) {
         if (requestCode == PERMISSIONS_REQUEST_CODE) {
             if (areAllPermissionsGranted()) {
-                startCamera()
+//                startCamera()
+                requireActivity().finish()
+                startActivity(requireActivity().intent)
+            } else {
+                Toast.makeText(
+                    requireActivity(),
+                    "Failed to grant permission",
+                    Toast.LENGTH_LONG
+                ).show()
+                requireActivity().finish()
+            }
+        }
+
+        if(requestCode == CameraDetectionViewModel.PERMISSIONS_REQUEST_CODE){
+            if (CameraDetectionViewModel.checkPermissions(requireContext())){
+//                viewModel.initializeServices()
+                requireActivity().finish()
+                startActivity(requireActivity().intent)
             } else {
                 Toast.makeText(
                     requireActivity(),
@@ -151,5 +219,14 @@ class CameraDetectionFragment : Fragment() {
             Navigation.createNavigateOnClickListener(R.id.action_cameraDetectionFragment_to_treeMapFragment)
         )
         binding.treeDetectionDrawingSurface.setZOrderOnTop(true)
+        binding.expected
+    }
+
+    private fun initializeCameraProperties(){
+        val cameraManager = requireContext().getSystemService(Context.CAMERA_SERVICE) as CameraManager
+        val cameraCharacteristics = cameraManager.getCameraCharacteristics("0")
+
+        focalLength = cameraCharacteristics.get(CameraCharacteristics.LENS_INFO_AVAILABLE_FOCAL_LENGTHS)?.firstOrNull()
+        sensorSize = cameraCharacteristics.get(CameraCharacteristics.SENSOR_INFO_PHYSICAL_SIZE)
     }
 }

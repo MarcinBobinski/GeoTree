@@ -73,7 +73,7 @@ class TreeDetectionModel(context: Context) {
         inferenceTime = System.currentTimeMillis() - inferenceTime
 
         Timber.i("Inference time: $inferenceTime ms.")
-        Timber.i("Result Size${scores.floatArray.take(10).joinToString(separator = ", ")}")
+        Timber.i("Inference results: ${scores.floatArray.take(10).joinToString(separator = ", ")}")
 
         return prepareOutput(inferenceTime, scores, boxes, inputImage.width, inputImage.height)
     }

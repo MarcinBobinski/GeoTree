@@ -10,6 +10,8 @@
         <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/layout/tree_map_fragment.xml" value="0.334375" />
         <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.5197916666666667" />
         <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml" value="0.5197916666666667" />
+        <entry key="app/src/main/res/layout/activity_main.xml" value="0.3729166666666667" />
+        <entry key="app/src/main/res/layout/camera_detection_fragment.xml" value="0.3729166666666667" />
         <entry key="app/src/main/res/layout/settings_fragment.xml" value="0.5635416666666667" />
       </map>
     </option>
