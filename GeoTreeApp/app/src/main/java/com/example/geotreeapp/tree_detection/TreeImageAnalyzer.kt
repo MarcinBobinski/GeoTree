@@ -41,6 +41,7 @@ class TreeImageAnalyzer(
     private suspend fun runInference(inputImage: Bitmap) {
         withContext(Dispatchers.Default) {
             val inferenceResult = treeDetectionModel.inference(inputImage)
+//            val inferenceResult = InferenceOutput(0, listOf())
             withContext(Dispatchers.Main) {
                 isProcessing = false
                 _detectionPayload.value = DetectionPayload(

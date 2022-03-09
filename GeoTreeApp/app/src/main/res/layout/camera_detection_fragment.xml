@@ -59,7 +59,7 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <com.google.android.material.slider.Slider
-        android:id="@+id/slider"
+        android:id="@+id/distanceSlider"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:contentDescription="Slider"

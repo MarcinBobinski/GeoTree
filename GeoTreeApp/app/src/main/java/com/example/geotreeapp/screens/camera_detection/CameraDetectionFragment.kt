@@ -43,6 +43,8 @@ class CameraDetectionFragment : Fragment() {
 
     private lateinit var treeImageAnalyzer: TreeImageAnalyzer
 
+    private var distance = 20.0
+
     // Camera properties
     private var focalLength: Float? = null
     private var sensorSize: SizeF? = null
@@ -67,7 +69,6 @@ class CameraDetectionFragment : Fragment() {
             it?:return@observe
             binding.expected.text = "t: ${it.amount} \n o: ${it.orientation} \n x: ${it.location.longitude} \n y: ${it.location.latitude}"
         }
-
     }
 
 
@@ -103,7 +104,7 @@ class CameraDetectionFragment : Fragment() {
             var expectedNumberOfTreesTime = System.currentTimeMillis()
             viewModel.updateExpectedNumberOfTrees(
                 UpdateExpectedNumberOfTreesInput(
-                    5.0,
+                    distance,
                     focalLength,
                     sensorSize,
                     payload.imageWidth,
@@ -180,35 +181,38 @@ class CameraDetectionFragment : Fragment() {
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(requireActivity())
 
-        cameraProviderFuture.addListener({
-            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+        cameraProviderFuture.addListener(
+            {
+                val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
 
-            val preview = Preview
-                .Builder()
-                .build()
-                .also { it.setSurfaceProvider(binding.cameraView.surfaceProvider) }
+                val preview = Preview
+                    .Builder()
+                    .build()
+                    .also { it.setSurfaceProvider(binding.cameraView.surfaceProvider) }
 
-            val resolution = resources.displayMetrics.let { Size(it.widthPixels, it.heightPixels) }
+                val resolution =
+                    resources.displayMetrics.let { Size(it.widthPixels, it.heightPixels) }
 
-            val imageAnalysis = ImageAnalysis.Builder()
-                .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                .setTargetResolution(resolution)
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                .build()
-                .apply { setAnalyzer(Executors.newSingleThreadExecutor(), treeImageAnalyzer) }
+                val imageAnalysis = ImageAnalysis.Builder()
+                    .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
+                    .setTargetResolution(resolution)
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build()
+                    .apply { setAnalyzer(Executors.newSingleThreadExecutor(), treeImageAnalyzer) }
 
-            try {
-                cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(
-                    this,
-                    CameraSelector.DEFAULT_BACK_CAMERA,
-                    imageAnalysis,
-                    preview
-                )
-            } catch (e: Exception) {
-                Timber.e("Failed to start camera", e)
-            }
-        }, ContextCompat.getMainExecutor(requireContext()))
+                try {
+                    cameraProvider.unbindAll()
+                    cameraProvider.bindToLifecycle(
+                        this,
+                        CameraSelector.DEFAULT_BACK_CAMERA,
+                        imageAnalysis,
+                        preview
+                    )
+                } catch (e: Exception) {
+                    Timber.e("Failed to start camera", e)
+                }
+            }, ContextCompat.getMainExecutor(requireContext())
+        )
     }
 
     private fun initializeGuiBindings() {
@@ -220,6 +224,11 @@ class CameraDetectionFragment : Fragment() {
         )
         binding.treeDetectionDrawingSurface.setZOrderOnTop(true)
         binding.expected
+
+        binding.distanceSlider.let {
+            distance = it.value.toDouble()
+            it.addOnChangeListener { slider, value, fromUser -> distance = value.toDouble() }
+        }
     }
 
     private fun initializeCameraProperties(){

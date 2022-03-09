@@ -20,6 +20,10 @@ import com.example.geotreeapp.tree.TreeService
 import com.example.geotreeapp.tree.tree_db.infrastructure.Tree
 import timber.log.Timber
 import java.lang.Math.*
+import org.gavaghan.geodesy.Ellipsoid
+import org.gavaghan.geodesy.GeodeticCalculator
+import org.gavaghan.geodesy.GlobalCoordinates
+
 
 class CameraDetectionViewModel(
     application: Application
@@ -32,16 +36,18 @@ class CameraDetectionViewModel(
     @SuppressLint("StaticFieldLeak")
     private var treeService: TreeService? = null
 
-    var trees: List<NormalizedLocation>? = null
-
     companion object {
-
         val REQUIRED_PERMISSIONS = arrayOf(
             GpsService.REQUIRED_PERMISSIONS
         ).flatten().distinct().toTypedArray()
         const val PERMISSIONS_REQUEST_CODE = 10
         fun checkPermissions(context: Context) = REQUIRED_PERMISSIONS.all { ActivityCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }
+
+        val REFERENCE: Ellipsoid = Ellipsoid.WGS84
     }
+
+
+    var trees: List<Tree>? = null
 
     private var areServicesRunning = false
 
@@ -49,6 +55,8 @@ class CameraDetectionViewModel(
     val expectedNTreesPayload: LiveData<ExpectedTreesPayload>
         get() = _expectedTreesPayload
 
+
+    private val geoCalculator = GeodeticCalculator()
 
     init {
         application.let {
@@ -78,33 +86,28 @@ class CameraDetectionViewModel(
         if (!input.isValid()) return
 
         val location = gpsService?.getLocation()?: return
-        val locationNormalized = location.let {
-            NormalizedLocation.fromLocation(it)
-            //NormalizedLocation.fromLocation(52.229934, 21.066967)
-        }
+        val locationGC = GlobalCoordinates(location.latitude, location.longitude)
+//        val locationGC = GlobalCoordinates(52.237049, 21.017532)
 
-        val orientation = orientationService?.getOrientation() ?: return
+        val userAzimuth = orientationService?.getOrientation() ?: return
         val fov = calculateFov(
             focalLength = input.focalLength!!,
             sensorSize = input.sensorSize!!,
             aspectRatio = ( input.imageWidth / input.imageHeight.toDouble() ),
             portraitOrientation = input.portraitOrientation
         )
-        Timber.i("LEGIA 6")
-        val treesInFOV = trees?.filter {
-            pow((it.x - locationNormalized.x), 2.0) + pow((it.y - locationNormalized.y), 2.0) < pow(input.distance, 2.0)
-        }?.filter {
-            isInFov(
-                orientation,
-                fov,
-                calculateAngleFromNorthAxis(locationNormalized, it)
-            )
-        }?: return
-        Timber.i("Expected number of trees: ${treesInFOV.size}")
+
+        val expectedTrees = trees?.map { GlobalCoordinates(it.y, it.x) }
+            ?.map { geoCalculator.calculateGeodeticCurve(REFERENCE, locationGC, it) }
+            ?.filter { tree ->
+                tree.ellipsoidalDistance < input.distance && isInFov(userAzimuth, tree.azimuth, fov)
+            } ?: return
+
+        Timber.i("Expected number of trees: ${expectedTrees.size}")
 
         _expectedTreesPayload.value = ExpectedTreesPayload(
-            treesInFOV.size,
-            orientation,
+            expectedTrees.size,
+            userAzimuth,
             location
         )
     }
@@ -123,30 +126,9 @@ class CameraDetectionViewModel(
         }
     }
 
-    private fun calculateAngleFromNorthAxis(p1: NormalizedLocation, p2: NormalizedLocation): Double {
-        // https://math.stackexchange.com/questions/714378/find-the-angle-that-creating-with-y-axis-in-degrees
-        val ymax = max(p1.y, p2.y)
-        val ymin = min(p1.y, p2.y)
 
-        val angle =  acos(
-            ((ymax - ymin)) / (sqrt(pow(p1.x - p2.x, 2.0) + pow(ymax - ymin, 2.0)))
-        )
-
-        return when {
-            p1.x < p2.x -> { toDegrees(angle) }
-            p1.x > p2.x -> { toDegrees(angle) + 180.0 }
-            else -> {
-                if(p1.y < p2.y){
-                    0.0
-                } else {
-                    180.0
-                }
-            }
-        }
-    }
-
-    private fun isInFov(orientation: Double, fov: Double, orientationOfObject: Double): Boolean {
-        val angle = normalizeAngle(orientationOfObject - orientation)
+    private fun isInFov(userAzimuth: Double, objectAzimuth: Double, fov: Double): Boolean {
+        val angle = normalizeAngle(objectAzimuth - userAzimuth)
         return angle < fov/2.0 || angle > 360.0 - (fov/2.0)
     }
 
@@ -167,6 +149,7 @@ class CameraDetectionViewModel(
         val connection = object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
                 gpsService = (service as GpsService.GpsServiceBinder).getService()
+                gpsService?.resetLocation()
             }
             override fun onServiceDisconnected(name: ComponentName?) {
                 gpsService = null
@@ -202,7 +185,7 @@ class CameraDetectionViewModel(
             override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
                 treeService = (service as TreeService.TreeServiceBinder).getService()
                 treeService!!.allTrees.observeForever {
-                    trees = it.map { NormalizedLocation.fromTree(it) }
+                    trees = it
                 }
             }
             override fun onServiceDisconnected(name: ComponentName?) {
@@ -234,36 +217,6 @@ data class UpdateExpectedNumberOfTreesInput(
         if (focalLength == null) return false
         if (sensorSize == null) return false
         return true
-    }
-}
-
-data class NormalizedLocation(
-    val x: Double,
-    val y: Double,
-    val id: Int? = null
-) {
-    companion object {
-        private val EARTH_RADIUS_IN_METERS = 6_371_008.7714
-        fun fromTree(tree: Tree): NormalizedLocation{
-            //https://stackoverflow.com/questions/1185408/converting-from-longitude-latitude-to-cartesian-coordinates
-            return NormalizedLocation(
-                EARTH_RADIUS_IN_METERS * cos(toRadians(tree.y)) * cos(toRadians(tree.x)),
-                EARTH_RADIUS_IN_METERS * cos(toRadians(tree.y)) * sin(toRadians(tree.x)),
-                tree.id
-            )
-        }
-        fun fromLocation(location: Location): NormalizedLocation {
-            return NormalizedLocation(
-                EARTH_RADIUS_IN_METERS * cos(toRadians(location.latitude)) * cos(toRadians(location.longitude)),
-                EARTH_RADIUS_IN_METERS * cos(toRadians(location.latitude)) * sin(toRadians(location.longitude))
-            )
-        }
-        fun fromLocation(x: Double, y: Double): NormalizedLocation {
-            return NormalizedLocation(
-                EARTH_RADIUS_IN_METERS * cos(toRadians(y)) * cos(toRadians(x)),
-                EARTH_RADIUS_IN_METERS * cos(toRadians(y)) * sin(toRadians(x))
-            )
-        }
     }
 }
 

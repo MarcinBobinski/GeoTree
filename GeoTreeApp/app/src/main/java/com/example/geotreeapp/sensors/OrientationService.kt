@@ -33,7 +33,7 @@ class OrientationService() : Service(), SensorEventListener {
     override fun onCreate() {
         sensorManager = applicationContext.getSystemService(Context.SENSOR_SERVICE) as SensorManager
 
-        HandlerThread("orientationServiceHandlerThread", Process.THREAD_PRIORITY_BACKGROUND).apply {
+        HandlerThread("orientationServiceHandlerThread", Process.THREAD_PRIORITY_DEFAULT).apply {
             start()
             handler = Handler(looper)
         }

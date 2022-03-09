@@ -44,7 +44,7 @@ class GpsService: Service(), LocationListener {
     override fun onCreate() {
         locationManager = applicationContext.getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
-        HandlerThread("gpsServiceHandlerThread", Process.THREAD_PRIORITY_BACKGROUND).apply {
+        HandlerThread("gpsServiceHandlerThread", Process.THREAD_PRIORITY_DEFAULT).apply {
             start()
             this@GpsService.looper = looper
         }
@@ -76,6 +76,13 @@ class GpsService: Service(), LocationListener {
                 this as LocationListener,
                 looper
             )
+            locationManager.requestLocationUpdates(
+                LocationManager.NETWORK_PROVIDER,
+                TIME,
+                MIN_DISTANCE,
+                this as LocationListener,
+                looper
+            )
             isRunning = true
             true
         } else {
@@ -93,6 +100,10 @@ class GpsService: Service(), LocationListener {
     override fun onDestroy() {
         stopGPS()
         super.onDestroy()
+    }
+
+    fun resetLocation() {
+        this.lastLocation = null
     }
 
 }
