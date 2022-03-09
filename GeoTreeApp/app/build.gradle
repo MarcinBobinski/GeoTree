@@ -33,6 +33,7 @@ android {
     buildFeatures {
         mlModelBinding true
         viewBinding true
+        dataBinding true
     }
     aaptOptions{
         noCompress "tflite" // model won't be compressed
@@ -103,6 +104,11 @@ dependencies {
     // TensorFlow Lite
     implementation 'org.tensorflow:tensorflow-lite-support:0.1.0'
     implementation 'org.tensorflow:tensorflow-lite-metadata:0.1.0'
+    implementation 'org.tensorflow:tensorflow-lite:2.3.0'
     implementation 'org.tensorflow:tensorflow-lite-gpu:2.3.0'
+
+    // Geodesy
+    // https://mvnrepository.com/artifact/org.gavaghan/geodesy
+    implementation 'org.gavaghan:geodesy:1.1.3'
 
 }

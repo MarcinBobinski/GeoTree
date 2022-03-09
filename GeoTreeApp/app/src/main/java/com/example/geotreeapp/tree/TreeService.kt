@@ -26,12 +26,12 @@ class TreeService(): Service() {
 
     private lateinit var treeRepository: TreeRepository
 
-    var allTrees: LiveData<List<Tree>>? = null
-    var treesNumber: LiveData<Long>? = null
+    lateinit var allTrees: LiveData<List<Tree>>
+    lateinit var treesNumber: LiveData<Long>
     private var isUpdatingData = false
 
-    val job = SupervisorJob()
-    val treeServiceScope = CoroutineScope(CoroutineName("TreeServiceScope") + Dispatchers.IO + job)
+    private val job = SupervisorJob()
+    private val treeServiceScope = CoroutineScope(CoroutineName("TreeServiceScope") + Dispatchers.IO + job)
 
     override fun onCreate() {
         super.onCreate()
@@ -59,7 +59,7 @@ class TreeService(): Service() {
         }
     }
 
-    suspend fun fetchTrees(treesIds: List<List<Long>>): List<Tree>{
+    private suspend fun fetchTrees(treesIds: List<List<Long>>): List<Tree>{
         return withContext(Dispatchers.IO){
             treesIds.map {
                 ensureActive()
@@ -77,7 +77,7 @@ class TreeService(): Service() {
         }
     }
 
-    suspend fun fetchTreesNumber(): Long{
+    private suspend fun fetchTreesNumber(): Long{
         return withContext(Dispatchers.IO){
             val response = UmWawApi.fetchResponseWithNoTrees()
             if(response.isSuccessful) {

@@ -8,13 +8,13 @@ import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.SurfaceView
 import androidx.core.graphics.toRectF
-import com.example.geotreeapp.tree_detection.TreeBox
+import com.example.geotreeapp.tree_detection.TreeDetection
 
 class TreeDetectionDrawingSurface(
     context: Context,
     attributeSet: AttributeSet
 ) : SurfaceView(context, attributeSet) {
-    var treeBoxes: List<TreeBox>? = null
+    var treeDetections: List<TreeDetection>? = null
 
     var isTransformInitialized = false
     private var modelToSurfaceTransform: Matrix = Matrix()
@@ -25,7 +25,7 @@ class TreeDetectionDrawingSurface(
 
     override fun onDraw(canvas: Canvas) {
         if (isTransformInitialized) {
-            treeBoxes?.forEach {
+            treeDetections?.forEach {
                 it.rect.toRectF()
                     .apply { modelToSurfaceTransform.mapRect(this) }
                     .run {

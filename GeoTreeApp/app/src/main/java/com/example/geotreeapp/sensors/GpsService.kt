@@ -2,7 +2,6 @@ package com.example.geotreeapp.sensors
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.app.Service
 import android.content.Context
 import android.content.Intent
@@ -10,9 +9,8 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
-import android.os.Binder
+import android.os.*
 
-import android.os.IBinder
 import androidx.core.app.ActivityCompat
 
 class GpsService: Service(), LocationListener {
@@ -34,16 +32,38 @@ class GpsService: Service(), LocationListener {
         private const val PERMISSIONS_REQUEST_CODE = 2
     }
 
+    var isRunning: Boolean = false
+        private set
+
     private lateinit var locationManager: LocationManager
     private var lastLocation: Location? = null
     fun getLocation() = lastLocation
 
+    private lateinit var looper: Looper
+
     override fun onCreate() {
         locationManager = applicationContext.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+
+        HandlerThread("gpsServiceHandlerThread", Process.THREAD_PRIORITY_DEFAULT).apply {
+            start()
+            this@GpsService.looper = looper
+        }
     }
 
     override fun onLocationChanged(location: Location) {
         this.lastLocation = location
+    }
+
+
+    override fun onProviderDisabled(provider: String) {
+        isRunning = false
+    }
+
+    override fun onProviderEnabled(provider: String) {
+        isRunning = true
+    }
+
+    override fun onStatusChanged(provider: String?, status: Int, extras: Bundle?) {
     }
 
     @SuppressLint("MissingPermission")
@@ -53,20 +73,26 @@ class GpsService: Service(), LocationListener {
                 LocationManager.GPS_PROVIDER,
                 TIME,
                 MIN_DISTANCE,
-                this as LocationListener
+                this as LocationListener,
+                looper
             )
+            locationManager.requestLocationUpdates(
+                LocationManager.NETWORK_PROVIDER,
+                TIME,
+                MIN_DISTANCE,
+                this as LocationListener,
+                looper
+            )
+            isRunning = true
             true
         } else {
+            isRunning = false
             false
         }
     }
 
     fun stopGPS(){
         locationManager.removeUpdates(this)
-    }
-
-    fun requirePermissions(activity: Activity){
-        ActivityCompat.requestPermissions(activity, REQUIRED_PERMISSIONS, PERMISSIONS_REQUEST_CODE)
     }
 
     fun checkPermissions() = REQUIRED_PERMISSIONS.all { ActivityCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }
@@ -76,26 +102,8 @@ class GpsService: Service(), LocationListener {
         super.onDestroy()
     }
 
-    // https://stackoverflow.com/questions/18125241/how-to-get-data-from-service-to-activity
-    // https://xizzhu.me/post/2020-05-18-android-activity-service-communication/
-}
+    fun resetLocation() {
+        this.lastLocation = null
+    }
 
-//var gpsService: GpsService? = null
-//var gpsBound  = false
-//val connection = object : ServiceConnection {
-//    override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-//        gpsBound = true
-//        gpsService = (service as GpsService.GpsBinder).getService()
-//    }
-//
-//    override fun onServiceDisconnected(name: ComponentName?) {
-//        gpsBound = false
-//    }
-//
-//}
-//
-//requireActivity().run {
-//    Intent(this, GpsService::class.java).also { intent ->
-//        this.bindService(intent, connection, Context.BIND_AUTO_CREATE)
-//    }
-//}
+}
