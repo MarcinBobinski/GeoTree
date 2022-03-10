@@ -17,7 +17,7 @@ import timber.log.Timber
 
 class TreeDetectionModel(context: Context) {
     companion object {
-        private const val MODEL_NAME = "tree_ssd_mobilenet_v2_640.tflite"
+        private const val MODEL_NAME = "tree_ssd_mobilenet_v2_640_v7.tflite"
         private const val THREADS_NUM = 4
 
         private const val INPUT_IMAGE_SIZE = 640

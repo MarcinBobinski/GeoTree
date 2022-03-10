@@ -5,8 +5,8 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.example.geotreeapp.base.rotate
-import com.example.geotreeapp.base.toBitmap
+import com.example.geotreeapp.common.rotate
+import com.example.geotreeapp.common.toBitmap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

@@ -1,4 +1,4 @@
-package com.example.geotreeapp.base
+package com.example.geotreeapp.common
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
