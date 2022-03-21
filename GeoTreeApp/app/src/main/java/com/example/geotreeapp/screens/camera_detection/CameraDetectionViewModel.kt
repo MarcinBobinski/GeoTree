@@ -18,6 +18,11 @@ import com.example.geotreeapp.sensors.GpsService
 import com.example.geotreeapp.sensors.OrientationService
 import com.example.geotreeapp.tree.TreeService
 import com.example.geotreeapp.tree.tree_db.infrastructure.Tree
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import timber.log.Timber
 import java.lang.Math.*
 import org.gavaghan.geodesy.Ellipsoid
@@ -46,7 +51,6 @@ class CameraDetectionViewModel(
         val REFERENCE: Ellipsoid = Ellipsoid.WGS84
     }
 
-
     var trees: List<Tree>? = null
 
     private var areServicesRunning = false
@@ -54,7 +58,6 @@ class CameraDetectionViewModel(
     private val _expectedTreesPayload: MutableLiveData<ExpectedTreesPayload> = MutableLiveData(null)
     val expectedNTreesPayload: LiveData<ExpectedTreesPayload>
         get() = _expectedTreesPayload
-
 
     private val geoCalculator = GeodeticCalculator()
 
@@ -82,12 +85,17 @@ class CameraDetectionViewModel(
     }
 
     fun updateExpectedNumberOfTrees(input: UpdateExpectedNumberOfTreesInput){
+        CoroutineScope(Dispatchers.Default).launch {
+            update(input)
+        }
+    }
+
+    private suspend fun update(input: UpdateExpectedNumberOfTreesInput){
         if(!areServicesRunning){ if (!initializeServices()) return }
         if (!input.isValid()) return
 
         val location = gpsService?.getLocation()?: return
         val locationGC = GlobalCoordinates(location.latitude, location.longitude)
-//        val locationGC = GlobalCoordinates(52.237049, 21.017532)
 
         val userAzimuth = orientationService?.getOrientation() ?: return
         val fov = calculateFov(
@@ -97,19 +105,22 @@ class CameraDetectionViewModel(
             portraitOrientation = input.portraitOrientation
         )
 
-        val expectedTrees = trees?.map { GlobalCoordinates(it.y, it.x) }
+        val expectedTrees = trees?.asFlow()
+            ?.map { GlobalCoordinates(it.y, it.x) }
             ?.map { geoCalculator.calculateGeodeticCurve(REFERENCE, locationGC, it) }
-            ?.filter { tree ->
-                tree.ellipsoidalDistance < input.distance && isInFov(userAzimuth, tree.azimuth, fov)
-            } ?: return
+            ?.filter { it.ellipsoidalDistance < input.distance }
+            ?.filter { isInFov(userAzimuth, it.azimuth, fov) }
+            ?.toList() ?: return
 
         Timber.i("Expected number of trees: ${expectedTrees.size}")
 
-        _expectedTreesPayload.value = ExpectedTreesPayload(
-            expectedTrees.size,
-            userAzimuth,
-            location
-        )
+        withContext(Dispatchers.Main){
+            _expectedTreesPayload.value = ExpectedTreesPayload(
+                expectedTrees.size,
+                userAzimuth,
+                location
+            )
+        }
     }
 
     private fun calculateFov(
@@ -149,7 +160,6 @@ class CameraDetectionViewModel(
         val connection = object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
                 gpsService = (service as GpsService.GpsServiceBinder).getService()
-                gpsService?.resetLocation()
             }
             override fun onServiceDisconnected(name: ComponentName?) {
                 gpsService = null

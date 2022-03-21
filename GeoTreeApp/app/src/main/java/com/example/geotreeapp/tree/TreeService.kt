@@ -5,20 +5,24 @@ import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
 import androidx.lifecycle.LiveData
-import com.example.geotreeapp.base.retry
+import com.example.geotreeapp.common.retrySuspend
 import com.example.geotreeapp.tree.api_um_waw.UmWawApi
 import com.example.geotreeapp.tree.tree_db.infrastructure.Tree
 import com.example.geotreeapp.tree.tree_db.infrastructure.TreeDatabase
 import com.example.geotreeapp.tree.tree_db.TreeRepository
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 import timber.log.Timber
 import java.lang.Exception
 import java.lang.NullPointerException
+import java.util.concurrent.Executors
 
 class TreeService(): Service() {
     inner class TreeServiceBinder: Binder() { fun getService(): TreeService = this@TreeService }
     private val binder = TreeServiceBinder()
     override fun onBind(intent: Intent?): IBinder { return binder }
+
+    private val serviceThreadPool = Executors.newFixedThreadPool(4)
 
     companion object{
         private const val PAGE_SIZE = 25
@@ -59,19 +63,27 @@ class TreeService(): Service() {
         }
     }
 
-    private suspend fun fetchTrees(treesIds: List<List<Long>>): List<Tree>{
-        return withContext(Dispatchers.IO){
-            treesIds.map {
+    private suspend fun fetchTrees(treesIds: List<List<Long>>): List<Tree> {
+        return withContext(Dispatchers.IO) {
+            treesIds.asFlow().map {
                 ensureActive()
-                retry {
+                retrySuspend {
                     val response = UmWawApi.fetchResponseWithTreeId(it)
-                    if(response.isSuccessful){
-                        response.body()?.getTrees() ?: throw NullPointerException("TreeServiceViewModel.fetchTrees response body is null for treesIds: [${it.joinToString(separator = ", ")}]")
+                    if (response.isSuccessful) {
+                        response.body()?.getTrees() ?: throw NullPointerException(
+                            "TreeServiceViewModel.fetchTrees response body is null for treesIds: [${it.joinToString(separator = ", ")}]"
+                        )
                     } else {
-                        throw Exception("TreeServiceViewModel.fetchTrees unknown error, response status code: ${response.code()}, ${response.errorBody().toString()}")
+                        throw Exception(
+                            "TreeServiceViewModel.fetchTrees unknown error, response status code: ${response.code()}, ${
+                                response.errorBody().toString()
+                            }"
+                        )
                     }
                 }
             }
+                .flowOn(serviceThreadPool.asCoroutineDispatcher())
+                .toList()
                 .flatten()
                 .map { Tree(it.id, it.x, it.y) }
         }

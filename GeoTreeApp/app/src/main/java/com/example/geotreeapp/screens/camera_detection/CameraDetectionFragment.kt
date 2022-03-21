@@ -86,8 +86,9 @@ class CameraDetectionFragment : Fragment() {
 
         treeImageAnalyzer = TreeImageAnalyzer(TreeDetectionModel(requireContext()))
 
-        val detectionObserver = Observer<DetectionPayload> { payload ->
+        val isPortrait = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
 
+        val detectionObserver = Observer<DetectionPayload> { payload ->
             var drawingTime = System.currentTimeMillis()
             binding.treeDetectionDrawingSurface.let {
                 if (!it.isTransformInitialized) {
@@ -98,8 +99,6 @@ class CameraDetectionFragment : Fragment() {
             }
             drawingTime = System.currentTimeMillis() - drawingTime
             Timber.i("Drawing time: $drawingTime ms.")
-
-            val isPortrait = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
 
             var expectedNumberOfTreesTime = System.currentTimeMillis()
             viewModel.updateExpectedNumberOfTrees(

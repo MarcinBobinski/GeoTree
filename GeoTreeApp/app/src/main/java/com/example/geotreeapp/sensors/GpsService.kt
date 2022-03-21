@@ -22,7 +22,7 @@ class GpsService: Service(), LocationListener {
     }
 
     companion object {
-        private const val TIME = 100L
+        private const val TIME = 0L
         private const val MIN_DISTANCE = 0.0f
 
         val REQUIRED_PERMISSIONS = arrayOf(
@@ -56,10 +56,12 @@ class GpsService: Service(), LocationListener {
 
 
     override fun onProviderDisabled(provider: String) {
+        lastLocation = null
         isRunning = false
     }
 
     override fun onProviderEnabled(provider: String) {
+        lastLocation = null
         isRunning = true
     }
 

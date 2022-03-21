@@ -6,6 +6,8 @@ import android.graphics.Rect
 import android.os.Build
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
+import org.tensorflow.lite.gpu.CompatibilityList
+import org.tensorflow.lite.gpu.GpuDelegate
 import org.tensorflow.lite.support.common.FileUtil
 import org.tensorflow.lite.support.common.ops.CastOp
 import org.tensorflow.lite.support.common.ops.NormalizeOp
@@ -17,7 +19,8 @@ import timber.log.Timber
 
 class TreeDetectionModel(context: Context) {
     companion object {
-        private const val MODEL_NAME = "tree_ssd_mobilenet_v2_640.tflite"
+        private const val MODEL_NAME = "tree_ssd_mobilenet_v2_640_v7_gpu.tflite"
+        private const val GPU = true
         private const val THREADS_NUM = 4
 
         private const val INPUT_IMAGE_SIZE = 640
@@ -36,13 +39,20 @@ class TreeDetectionModel(context: Context) {
     private var interpreter: Interpreter
 
     init {
+        val compatList = CompatibilityList()
+
         val interpreterOptions = Interpreter.Options().apply {
-//            addDelegate(GpuDelegate())
-            setNumThreads(THREADS_NUM)
-            setUseXNNPACK(true)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                setUseNNAPI(true)
-                Timber.i("NNAPI acceleration is included")
+            if(compatList.isDelegateSupportedOnThisDevice && GPU){
+                // if the device has a supported GPU, add the GPU delegate
+                val delegateOptions = compatList.bestOptionsForThisDevice
+                addDelegate(GpuDelegate(delegateOptions))
+            } else {
+                setNumThreads(THREADS_NUM)
+                setUseXNNPACK(true)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    setUseNNAPI(true)
+                    Timber.i("NNAPI acceleration is included")
+                }
             }
         }
         interpreter = Interpreter(FileUtil.loadMappedFile(context, MODEL_NAME), interpreterOptions)
