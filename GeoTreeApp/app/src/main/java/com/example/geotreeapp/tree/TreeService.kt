@@ -10,6 +10,7 @@ import com.example.geotreeapp.tree.api_um_waw.UmWawApi
 import com.example.geotreeapp.tree.tree_db.infrastructure.Tree
 import com.example.geotreeapp.tree.tree_db.infrastructure.TreeDatabase
 import com.example.geotreeapp.tree.tree_db.TreeRepository
+import com.example.geotreeapp.tree.tree_db.infrastructure.TreeStatus
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import timber.log.Timber
@@ -85,7 +86,7 @@ class TreeService(): Service() {
                 .flowOn(serviceThreadPool.asCoroutineDispatcher())
                 .toList()
                 .flatten()
-                .map { Tree(it.id, it.x, it.y) }
+                .map { Tree(it.id, it.x, it.y, it.inv_number, it.type, TreeStatus.NOT_VERIFIED) }
         }
     }
 

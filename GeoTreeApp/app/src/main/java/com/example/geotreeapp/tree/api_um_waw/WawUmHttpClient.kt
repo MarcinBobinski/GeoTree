@@ -70,7 +70,9 @@ data class ResultPayload(
 class TreePayload(
     @Json(name = "_id") val id: Int,
     @Json(name = "x_wgs84") val x: Double,
-    @Json(name = "y_wgs84") val y: Double
+    @Json(name = "y_wgs84") val y: Double,
+    @Json(name = "numer_inw") val inv_number: String,
+    @Json(name = "gatunek") val type: String,
 )
 
 

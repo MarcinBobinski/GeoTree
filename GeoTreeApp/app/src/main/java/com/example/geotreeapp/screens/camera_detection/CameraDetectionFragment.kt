@@ -141,7 +141,6 @@ class CameraDetectionFragment : Fragment() {
     ) {
         if (requestCode == PERMISSIONS_REQUEST_CODE) {
             if (areAllPermissionsGranted()) {
-//                startCamera()
                 requireActivity().finish()
                 startActivity(requireActivity().intent)
             } else {
