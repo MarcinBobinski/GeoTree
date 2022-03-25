@@ -20,7 +20,6 @@ import com.example.geotreeapp.tree.TreeService
 import com.example.geotreeapp.tree.tree_db.infrastructure.Tree
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
@@ -40,6 +39,12 @@ class CameraDetectionViewModel(
     private var orientationService: OrientationService? = null
     @SuppressLint("StaticFieldLeak")
     private var treeService: TreeService? = null
+
+    var autoVerifier = false
+        private set
+
+
+
 
     companion object {
         val REQUIRED_PERMISSIONS = arrayOf(
@@ -67,6 +72,15 @@ class CameraDetectionViewModel(
             bindTreeService(it)
             bindOrientationService(it)
         }
+    }
+
+    fun autoVerifierSwitch(): Boolean {
+        autoVerifier = !autoVerifier
+        return autoVerifier
+    }
+
+    fun updateTrees(trees: List<Tree>) {
+        treeService?.updateTrees(trees)
     }
 
     fun initializeServices(): Boolean {
@@ -105,18 +119,21 @@ class CameraDetectionViewModel(
             portraitOrientation = input.portraitOrientation
         )
 
-        val expectedTrees = trees?.asFlow()
-            ?.map { GlobalCoordinates(it.y, it.x) }
-            ?.map { geoCalculator.calculateGeodeticCurve(REFERENCE, locationGC, it) }
-            ?.filter { it.ellipsoidalDistance < input.distance }
-            ?.filter { isInFov(userAzimuth, it.azimuth, fov) }
+        listOf(1,2,3)
+
+        val expectedTrees = trees
+            ?.associate { it to geoCalculator.calculateGeodeticCurve(REFERENCE, locationGC, GlobalCoordinates(it.y, it.x)) }
+            ?.filter { it.value.ellipsoidalDistance < input.distance }
+            ?.filter { isInFov(userAzimuth, it.value.azimuth, fov) }
+            ?.keys
             ?.toList() ?: return
 
         Timber.i("Expected number of trees: ${expectedTrees.size}")
 
         withContext(Dispatchers.Main){
             _expectedTreesPayload.value = ExpectedTreesPayload(
-                expectedTrees.size,
+                input.detectedTrees,
+                expectedTrees,
                 userAzimuth,
                 location
             )
@@ -216,6 +233,7 @@ class CameraDetectionViewModel(
 }
 
 data class UpdateExpectedNumberOfTreesInput(
+    val detectedTrees: Int,
     val distance: Double,
     val focalLength: Float?,
     val sensorSize: SizeF?,
@@ -231,7 +249,8 @@ data class UpdateExpectedNumberOfTreesInput(
 }
 
 data class ExpectedTreesPayload(
-    val amount: Int,
+    val detectedTrees: Int,
+    val expectedTrees: List<Tree>,
     val orientation: Double,
     val location: Location
 )

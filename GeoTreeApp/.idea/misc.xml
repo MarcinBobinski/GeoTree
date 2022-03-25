@@ -5,7 +5,18 @@
       <map>
         <entry key="../../../../../layout/custom_preview.xml" value="0.2390625" />
         <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.2324074074074074" />
+        <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/drawable/check_icon.xml" value="0.22592592592592592" />
+        <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/drawable/clear_icon.xml" value="0.14629629629629629" />
+        <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/drawable/compass_icon.xml" value="0.14629629629629629" />
+        <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/drawable/db_cion.xml" value="0.22592592592592592" />
+        <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/drawable/db_icon.xml" value="0.22592592592592592" />
         <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/drawable/ic_launcher_background.xml" value="0.1527777777777778" />
+        <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/drawable/ic_tree_solid.xml" value="0.22592592592592592" />
+        <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/drawable/map_icon.xml" value="0.14814814814814814" />
+        <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/drawable/map_icon_30.xml" value="0.14814814814814814" />
+        <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/drawable/return_icon.xml" value="0.14629629629629629" />
+        <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/drawable/settings_icon_30.xml" value="0.14814814814814814" />
+        <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/drawable/tree_icon.xml" value="0.14629629629629629" />
         <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/layout/activity_main.xml" value="0.37135416666666665" />
         <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/layout/camera_detection_fragment.xml" value="0.3203125" />
         <entry key="..\:/DEV/GeoTree/GeoTreeApp/app/src/main/res/layout/fragment_maps.xml" value="0.4114583333333333" />

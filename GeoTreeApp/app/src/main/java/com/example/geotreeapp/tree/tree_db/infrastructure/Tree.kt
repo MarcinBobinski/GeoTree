@@ -23,5 +23,5 @@ class TreeStatusConverter {
     @TypeConverter
     fun toTreeStatus(value: Int) = enumValues<TreeStatus>()[value]
     @TypeConverter
-    fun fromTreeStatus(value: TreeStatus)  = value.ordinal
+    fun fromTreeStatus(value: TreeStatus) = value.ordinal
 }
