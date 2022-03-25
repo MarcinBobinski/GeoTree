@@ -15,11 +15,16 @@ class TreeRepository(private val treeDao: TreeDao) {
         treeDao.insertAll(trees)
     }
 
-    fun fetchTreesInArea(xMin: Double, xMax:Double, yMin:Double, yMax: Double): List<Tree> {
-        return treeDao.fetchTreesInArea(xMin, xMax, yMin, yMax)
-    }
 
     suspend fun deleteAll(){
         treeDao.deleteAll()
+    }
+
+    suspend fun updateTree(tree: Tree){
+        treeDao.updateTree(tree)
+    }
+
+    suspend fun updateTrees(trees: List<Tree>){
+        treeDao.updateTrees(trees)
     }
 }

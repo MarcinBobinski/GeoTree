@@ -4,8 +4,10 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.room.TypeConverters
 
-@Database(entities = [Tree::class], version = 1, exportSchema = false)
+@Database(entities = [Tree::class], version = 2, exportSchema = false)
+@TypeConverters(TreeStatusConverter::class)
 abstract class TreeDatabase : RoomDatabase() {
     abstract fun treeDao(): TreeDao
 
@@ -25,7 +27,8 @@ abstract class TreeDatabase : RoomDatabase() {
                         context.applicationContext,
                         TreeDatabase::class.java,
                         "tree_database"
-                    ).build()
+                    ).fallbackToDestructiveMigration()
+                        .build()
                     INSTANCE = instance
                 }
                 return instance

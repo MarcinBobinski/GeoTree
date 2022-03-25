@@ -13,24 +13,23 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.Navigation
 import com.example.geotreeapp.R
 import com.example.geotreeapp.databinding.CameraDetectionFragmentBinding
-import com.example.geotreeapp.tree_detection.DetectionPayload
+import com.example.geotreeapp.tree.tree_db.infrastructure.TreeStatus
 import com.example.geotreeapp.tree_detection.TreeImageAnalyzer
 import com.example.geotreeapp.tree_detection.TreeDetectionModel
 import timber.log.Timber
 import java.lang.Exception
 import java.util.concurrent.Executors
+import kotlin.math.roundToInt
 
 class CameraDetectionFragment : Fragment() {
     companion object {
@@ -49,9 +48,18 @@ class CameraDetectionFragment : Fragment() {
     private var focalLength: Float? = null
     private var sensorSize: SizeF? = null
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         viewModel = ViewModelProvider(this).get(CameraDetectionViewModel::class.java)
+        binding = CameraDetectionFragmentBinding.inflate(inflater, container, false)
+
+        initializeGuiBindings()
+
+        bindAllObservers()
 
         if (!CameraDetectionViewModel.checkPermissions(requireContext())){
             CameraDetectionViewModel.let {
@@ -65,30 +73,40 @@ class CameraDetectionFragment : Fragment() {
             viewModel.initializeServices()
         }
 
-        viewModel.expectedNTreesPayload.observe(viewLifecycleOwner) {
-            it?:return@observe
-            binding.expected.text = "t: ${it.amount} \n o: ${it.orientation} \n x: ${it.location.longitude} \n y: ${it.location.latitude}"
-        }
+
+        initializeCamera()
+
+        return binding.root
     }
 
+    private fun bindAllObservers(){
+        viewModel.expectedNTreesPayload.observe(viewLifecycleOwner) {
+            it?:return@observe
+            binding.compassText.text = "${it.orientation.roundToInt()}"
+            binding.expectedText.text = "${it.expectedTrees.size}"
+            binding.detectedText.text = "${it.detectedTrees}"
 
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        binding = CameraDetectionFragmentBinding.inflate(inflater, container, false)
-
-        initializeGuiBindings()
-
-        initializeCameraProperties()
+            if (viewModel.autoVerifier) {
+                if (it.expectedTrees.size <= it.detectedTrees && it.expectedTrees.isNotEmpty()) {
+                    it.expectedTrees.filter { it.treeStatus != TreeStatus.VERIFIED }
+                        .map { it.copy(treeStatus = TreeStatus.VERIFIED) }
+                        .let { viewModel.updateTrees(it) }
+                } else if (it.expectedTrees.size == 1) {
+                    it.expectedTrees.filter { it.treeStatus == TreeStatus.NOT_VERIFIED }
+                        .map { it.copy(treeStatus = TreeStatus.MISSING) }
+                        .let {
+                            if (it.isNotEmpty()) {
+                                viewModel.updateTrees(it)
+                            }
+                        }
+                }
+            }
+        }
 
         treeImageAnalyzer = TreeImageAnalyzer(TreeDetectionModel(requireContext()))
-
         val isPortrait = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
 
-        val detectionObserver = Observer<DetectionPayload> { payload ->
+        treeImageAnalyzer.detectionPayload.observe(viewLifecycleOwner) { payload ->
             var drawingTime = System.currentTimeMillis()
             binding.treeDetectionDrawingSurface.let {
                 if (!it.isTransformInitialized) {
@@ -103,27 +121,24 @@ class CameraDetectionFragment : Fragment() {
             var expectedNumberOfTreesTime = System.currentTimeMillis()
             viewModel.updateExpectedNumberOfTrees(
                 UpdateExpectedNumberOfTreesInput(
+                    payload.detections.size,
                     distance,
                     focalLength,
                     sensorSize,
                     payload.imageWidth,
                     payload.imageHeight,
                     isPortrait
-                    )
+                )
             )
             expectedNumberOfTreesTime = System.currentTimeMillis() - expectedNumberOfTreesTime
             Timber.i("Expecting number of trees time: $expectedNumberOfTreesTime ms.")
         }
 
-        treeImageAnalyzer.detectionPayload.observe(viewLifecycleOwner, detectionObserver)
-
-        initializeCamera()
-
-        return binding.root
     }
 
     private fun initializeCamera() {
         if (areAllPermissionsGranted()) {
+            initializeCameraProperties()
             startCamera()
         } else {
             ActivityCompat.requestPermissions(
@@ -134,41 +149,6 @@ class CameraDetectionFragment : Fragment() {
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        if (requestCode == PERMISSIONS_REQUEST_CODE) {
-            if (areAllPermissionsGranted()) {
-//                startCamera()
-                requireActivity().finish()
-                startActivity(requireActivity().intent)
-            } else {
-                Toast.makeText(
-                    requireActivity(),
-                    "Failed to grant permission",
-                    Toast.LENGTH_LONG
-                ).show()
-                requireActivity().finish()
-            }
-        }
-
-        if(requestCode == CameraDetectionViewModel.PERMISSIONS_REQUEST_CODE){
-            if (CameraDetectionViewModel.checkPermissions(requireContext())){
-//                viewModel.initializeServices()
-                requireActivity().finish()
-                startActivity(requireActivity().intent)
-            } else {
-                Toast.makeText(
-                    requireActivity(),
-                    "Failed to grant permission",
-                    Toast.LENGTH_LONG
-                ).show()
-                requireActivity().finish()
-            }
-        }
-    }
 
     private fun areAllPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(
@@ -222,11 +202,24 @@ class CameraDetectionFragment : Fragment() {
             Navigation.createNavigateOnClickListener(R.id.action_cameraDetectionFragment_to_treeMapFragment)
         )
         binding.treeDetectionDrawingSurface.setZOrderOnTop(true)
-        binding.expected
 
         binding.distanceSlider.let {
             distance = it.value.toDouble()
             it.addOnChangeListener { slider, value, fromUser -> distance = value.toDouble() }
+        }
+
+        if(viewModel.autoVerifier) {
+            binding.btnAutoVerification.setTextColor(ContextCompat.getColor(requireContext(), R.color.green))
+        } else {
+            binding.btnAutoVerification.setTextColor(ContextCompat.getColor(requireContext(), R.color.red))
+        }
+
+        binding.btnAutoVerification.setOnClickListener {
+            if( viewModel.autoVerifierSwitch()) {
+                binding.btnAutoVerification.setTextColor(ContextCompat.getColor(requireContext(), R.color.green))
+            } else {
+                binding.btnAutoVerification.setTextColor(ContextCompat.getColor(requireContext(), R.color.red))
+            }
         }
     }
 

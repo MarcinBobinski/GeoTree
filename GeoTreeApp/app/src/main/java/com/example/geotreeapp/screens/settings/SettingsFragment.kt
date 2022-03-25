@@ -27,7 +27,7 @@ class SettingsFragment : Fragment() {
     ): View {
         binding = SettingsFragmentBinding.inflate(inflater, container, false)
 
-        binding.back.setOnClickListener(Navigation.createNavigateOnClickListener(R.id.action_settingsFragment_to_cameraDetectionFragment))
+        binding.back.setOnClickListener{ Navigation.findNavController(binding.root).navigateUp() }
 
         binding.update.setOnClickListener {
             treeService?.updateData()
