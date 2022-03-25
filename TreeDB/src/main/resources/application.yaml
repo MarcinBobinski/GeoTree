@@ -1,7 +1,0 @@
-um-warszawa-api:
-    url: https://api.um.warszawa.pl
-    resourceId: ed6217dd-c8d0-4f7b-8bed-3b7eb81a95ba
-    pageSize: 100
-    executor:
-        corePoolSize: 5
-        maxPoolSize: 100
