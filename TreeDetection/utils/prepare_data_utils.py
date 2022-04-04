@@ -63,7 +63,8 @@ def filterAndPrepareDataFromLabelMe(path, dirName, select, exclude):
             rename_dict[file].replace("Annotations", "Images").replace("xml", "jpg")
         )
 
-def filterAndPrepareDataFromOI(path, select, rename = None):
+
+def filterAndPrepareDataFromOI(path, select, rename=None):
     delete_list = []
 
     for rootOfFile, _, files in os.walk(path):
@@ -92,7 +93,6 @@ def filterAndPrepareDataFromOI(path, select, rename = None):
                         if rename is not None:
                             obj.find("name").text = rename
 
-
                 if len(obj_to_delete) == num_of_objects:
                     delete_list.append(os.path.join(rootOfFile, _file))
                     continue
@@ -110,6 +110,49 @@ def filterAndPrepareDataFromOI(path, select, rename = None):
         os.remove(file.replace("xml", "jpg"))
 
 
+def prepateMyDataSet(path):
+    for file in os.listdir(path):
+        if not str(file).endswith(".xml"):
+            continue
+        tree = ET.parse(os.path.join(path, file))
+        root = tree.getroot()
+
+        for obj in root.findall("object"):
+            xmin, ymin, xmax, ymax = None, None, None, None
+            for point in obj.iter("pt"):
+                x, y = float(point.find("x").text), float(point.find("y").text)
+                if xmin is None:
+                    xmin = x
+                else:
+                    xmin = min(xmin, x)
+                if ymin is None:
+                    ymin = y
+                else:
+                    ymin = min(ymin, y)
+                if xmax is None:
+                    xmax = x
+                else:
+                    xmax = max(xmax, x)
+                if ymax is None:
+                    ymax = y
+                else:
+                    ymax = max(ymax, y)
+            bndbox = ET.SubElement(obj, "bndbox")
+            x_min = ET.SubElement(bndbox, "xmin")
+            x_min.text = str(int(xmin))
+            y_min = ET.SubElement(bndbox, "ymin")
+            y_min.text = str(int(ymin))
+            x_max = ET.SubElement(bndbox, "xmax")
+            x_max.text = str(int(xmax))
+            y_max = ET.SubElement(bndbox, "ymax")
+            y_max.text = str(int(ymax))
+            obj.remove(obj.find("polygon"))
+
+            obj.find("name").text = "tree"
+
+        tree.write(os.path.join(path, file))
+    print("Ended for path", path)
+
 def flatten(destination):
     all_files = []
     for root, dirs, files in os.walk(destination):
@@ -117,4 +160,3 @@ def flatten(destination):
             all_files.append(os.path.join(root, file))
     for file in all_files:
         shutil.move(file, destination)
-

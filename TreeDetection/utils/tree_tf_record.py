@@ -31,7 +31,12 @@ def create_tf_record_from_xml(dir, output_path, num_shards, mask: bool = True):
 
         for idx, image in enumerate(annotations):
             file_name = image.find("filename").text
-            h, w, _ = cv2.imread(os.path.join(dir, file_name)).shape
+            try:
+                h, w, _ = cv2.imread(os.path.join(dir, file_name)).shape
+            except Exception:
+                print(file_name)
+                continue
+
             image_json = {
                 "file_name": file_name,
                 "height": h,
