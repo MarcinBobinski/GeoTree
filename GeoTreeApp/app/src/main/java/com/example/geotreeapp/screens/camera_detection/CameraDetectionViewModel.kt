@@ -119,8 +119,6 @@ class CameraDetectionViewModel(
             portraitOrientation = input.portraitOrientation
         )
 
-        listOf(1,2,3)
-
         val expectedTrees = trees
             ?.associate { it to geoCalculator.calculateGeodeticCurve(REFERENCE, locationGC, GlobalCoordinates(it.y, it.x)) }
             ?.filter { it.value.ellipsoidalDistance < input.distance }
@@ -148,9 +146,9 @@ class CameraDetectionViewModel(
     ): Double {
         // https://stackoverflow.com/questions/67375781/without-additional-calculation-camera-or-camera2-apis-return-fov-angle-values-fo
         return if (portraitOrientation) {
-            toDegrees(2.0 * atan((sensorSize.height / (focalLength * 2f)).toDouble())) // vertical angle
+            toDegrees(2.0 * atan(aspectRatio * (sensorSize.height / (focalLength * 2f)).toDouble()))
         } else {
-            toDegrees(2.0 * atan(aspectRatio * (sensorSize.height / (focalLength * 2f)).toDouble())) // horizontal angle
+            toDegrees(2.0 * atan((sensorSize.height / (focalLength * 2f)).toDouble()))
         }
     }
 
