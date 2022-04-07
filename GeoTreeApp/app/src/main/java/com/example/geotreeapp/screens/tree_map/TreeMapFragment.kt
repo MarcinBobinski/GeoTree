@@ -61,7 +61,7 @@ class TreeMapFragment : Fragment(), OnMapReadyCallback {
         private const val MAP_POSITION = "MapPosition"
         private val DEFAULT_LOCATION = LatLng(52.237049, 21.017532)
         private const val DEFAULT_ZOOM = 11f
-        private const val MAX_NUMBER_OF_DISPLAYED_TREES = 200
+        private const val MAX_NUMBER_OF_DISPLAYED_TREES = 150
 
         private const val LAT = "Lat"
         private const val LNG = "Lng"
