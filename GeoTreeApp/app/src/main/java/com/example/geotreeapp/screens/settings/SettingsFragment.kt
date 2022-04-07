@@ -27,12 +27,22 @@ class SettingsFragment : Fragment() {
     ): View {
         binding = SettingsFragmentBinding.inflate(inflater, container, false)
 
+        bindGUI()
+        bindServices()
+
+        return binding.root
+    }
+
+
+    private fun bindGUI(){
         binding.back.setOnClickListener{ Navigation.findNavController(binding.root).navigateUp() }
 
         binding.update.setOnClickListener {
             treeService?.updateData()
         }
+    }
 
+    private fun bindServices(){
         val treeServiceConnection = object: ServiceConnection{
             override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
                 treeService = (service as TreeService.TreeServiceBinder).getService()
@@ -49,6 +59,5 @@ class SettingsFragment : Fragment() {
                 this.bindService(it, treeServiceConnection, Context.BIND_AUTO_CREATE)
             }
         }
-        return binding.root
     }
 }

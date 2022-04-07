@@ -19,7 +19,7 @@ import timber.log.Timber
 
 class TreeDetectionModel(context: Context) {
     companion object {
-        private const val MODEL_NAME = "tree_ssd_mobilenet_v2_640_v7_gpu.tflite"
+        private const val MODEL_NAME = "tree_ssd_mobilenet_v2_640_v10_gpu.tflite"
         private const val GPU = true
         private const val THREADS_NUM = 4
 
