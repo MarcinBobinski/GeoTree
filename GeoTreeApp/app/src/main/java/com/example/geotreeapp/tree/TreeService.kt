@@ -1,12 +1,15 @@
 package com.example.geotreeapp.tree
 
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.Binder
 import android.os.IBinder
+import android.widget.Toast
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.example.geotreeapp.common.retrySuspend
+import com.example.geotreeapp.constants.Preferences
 import com.example.geotreeapp.tree.api_um_waw.UmWawApi
 import com.example.geotreeapp.tree.tree_db.infrastructure.Tree
 import com.example.geotreeapp.tree.tree_db.infrastructure.TreeDatabase
@@ -17,8 +20,9 @@ import kotlinx.coroutines.flow.*
 import timber.log.Timber
 import java.lang.Exception
 import java.lang.NullPointerException
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.concurrent.Executors
-import kotlin.math.roundToInt
 
 class TreeService(): Service() {
     inner class TreeServiceBinder: Binder() { fun getService(): TreeService = this@TreeService }
@@ -65,15 +69,30 @@ class TreeService(): Service() {
                 Timber.i("Filling tree database")
                 treeRepository.addTrees(trees)
                 Timber.i("Finished updating trees data")
-                withContext(Dispatchers.Main){
+                withContext(Dispatchers.Main) {
+                    updatePreferencesAfterUpdateData()
                     _updateStatus.run {
                         value = 100
                         value = null
                     }
+                    Toast.makeText(applicationContext, "Data updated", Toast.LENGTH_LONG).show()
                 }
                 isUpdatingData = false
             }
+
         }
+    }
+
+    private fun updatePreferencesAfterUpdateData(){
+        val sdf = SimpleDateFormat("yyyy.MM.dd HH:mm")
+        val currentDateTime: String = sdf.format(Date())
+
+        val sharedPreferences =  applicationContext.getSharedPreferences(Preferences.NAME, Context.MODE_PRIVATE)
+
+        sharedPreferences.edit().apply {
+            putString(Preferences.LAST_UPDATE.first, currentDateTime)
+            putString(Preferences.SOURCE.first, "api.um.warszawa.pl")
+        }.apply()
     }
 
     private suspend fun fetchTrees(treesNum: Long): List<Tree> {
@@ -83,8 +102,9 @@ class TreeService(): Service() {
                 retrySuspend {
                     val response = UmWawApi.fetchResponseWithTreeId(it)
 
-                    val currentUpdateStatus = ((it.first() / treesNum) * 100).toDouble().toInt()
-                    val previousUpdateStatus = (((it.first() - PAGE_SIZE) / treesNum) * 100).toInt()
+                    val currentUpdateStatus = ((it.first().toDouble() / treesNum) * 100).toInt()
+                    val previousUpdateStatus = (((it.first().toDouble() - PAGE_SIZE) / treesNum) * 100).toInt()
+
                     if(currentUpdateStatus > previousUpdateStatus) {
                         withContext(Dispatchers.Main){
                             _updateStatus.value = currentUpdateStatus
