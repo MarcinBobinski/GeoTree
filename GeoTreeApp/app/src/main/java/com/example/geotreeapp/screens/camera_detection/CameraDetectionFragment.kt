@@ -22,6 +22,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.Navigation
 import com.example.geotreeapp.R
+import com.example.geotreeapp.constants.Preferences
 import com.example.geotreeapp.databinding.CameraDetectionFragmentBinding
 import com.example.geotreeapp.tree.tree_db.infrastructure.TreeStatus
 import com.example.geotreeapp.tree_detection.TreeImageAnalyzer
@@ -103,7 +104,10 @@ class CameraDetectionFragment : Fragment() {
             }
         }
 
-        treeImageAnalyzer = TreeImageAnalyzer(TreeDetectionModel(requireContext()))
+        val sharedPreferences =  requireActivity().getSharedPreferences(Preferences.NAME, Context.MODE_PRIVATE)
+        val gpuEnabled = Preferences.GPU_MODE.run { sharedPreferences.getBoolean(first, second) }
+        treeImageAnalyzer = TreeImageAnalyzer(TreeDetectionModel(requireContext(), gpuEnabled))
+
         val isPortrait = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
 
         treeImageAnalyzer.detectionPayload.observe(viewLifecycleOwner) { payload ->
@@ -117,6 +121,8 @@ class CameraDetectionFragment : Fragment() {
             }
             drawingTime = System.currentTimeMillis() - drawingTime
             Timber.i("Drawing time: $drawingTime ms.")
+
+            binding.inferenceTime.text = "${payload.inferenceTime} ms"
 
             var expectedNumberOfTreesTime = System.currentTimeMillis()
             viewModel.updateExpectedNumberOfTrees(
@@ -195,6 +201,8 @@ class CameraDetectionFragment : Fragment() {
     }
 
     private fun initializeGuiBindings() {
+        val sharedPreferences =  requireActivity().getSharedPreferences(Preferences.NAME, Context.MODE_PRIVATE)
+
         binding.btnSettings.setOnClickListener(
             Navigation.createNavigateOnClickListener(R.id.action_cameraDetectionFragment_to_settingsFragment)
         )
@@ -204,8 +212,28 @@ class CameraDetectionFragment : Fragment() {
         binding.treeDetectionDrawingSurface.setZOrderOnTop(true)
 
         binding.distanceSlider.let {
-            distance = it.value.toDouble()
-            it.addOnChangeListener { slider, value, fromUser -> distance = value.toDouble() }
+            var savedDistance = Preferences.DISTANCE.run { sharedPreferences.getInt(first, second) }
+            val savedMaxDistance = Preferences.DISTANCE_MAX.run { sharedPreferences.getInt(first, second) }
+            val savedMinDistance = Preferences.DISTANCE_MIN.run { sharedPreferences.getInt(first, second) }
+
+            if(savedDistance > savedMaxDistance) {
+                savedDistance = savedMaxDistance
+                sharedPreferences.edit().apply { putInt(Preferences.DISTANCE.first, savedDistance) }.apply()
+            }
+            if(savedDistance < savedMinDistance){
+                savedDistance = savedMinDistance
+                sharedPreferences.edit().apply { putInt(Preferences.DISTANCE.first, savedDistance) }.apply()
+            }
+
+            distance = savedDistance.toDouble()
+            it.valueFrom = savedMinDistance.toFloat()
+            it.valueTo = savedMaxDistance.toFloat()
+            it.value = savedDistance.toFloat()
+
+            it.addOnChangeListener { slider, value, fromUser ->
+                distance = value.toDouble()
+                sharedPreferences.edit().apply { putInt(Preferences.DISTANCE.first, value.toInt()) }.apply()
+            }
         }
 
         if(viewModel.autoVerifier) {
@@ -219,6 +247,14 @@ class CameraDetectionFragment : Fragment() {
                 binding.btnAutoVerification.setTextColor(ContextCompat.getColor(requireContext(), R.color.green))
             } else {
                 binding.btnAutoVerification.setTextColor(ContextCompat.getColor(requireContext(), R.color.red))
+            }
+        }
+
+        binding.inferenceTime.let {
+            it.visibility = if(Preferences.SHOW_INFERENCE_TIME.run { sharedPreferences.getBoolean(first, second) }){
+                View.VISIBLE
+            } else{
+                View.GONE
             }
         }
     }

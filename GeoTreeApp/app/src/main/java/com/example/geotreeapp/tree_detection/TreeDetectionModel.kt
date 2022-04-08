@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Rect
 import android.os.Build
+import android.widget.Toast
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import org.tensorflow.lite.gpu.CompatibilityList
@@ -16,11 +17,11 @@ import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.support.image.ops.ResizeOp
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 import timber.log.Timber
+import java.lang.Exception
 
-class TreeDetectionModel(context: Context) {
+class TreeDetectionModel(context: Context, gpu: Boolean) {
     companion object {
         private const val MODEL_NAME = "tree_ssd_mobilenet_v2_640_v10_gpu.tflite"
-        private const val GPU = true
         private const val THREADS_NUM = 4
 
         private const val INPUT_IMAGE_SIZE = 640
@@ -41,21 +42,31 @@ class TreeDetectionModel(context: Context) {
     init {
         val compatList = CompatibilityList()
 
-        val interpreterOptions = Interpreter.Options().apply {
-            if(compatList.isDelegateSupportedOnThisDevice && GPU){
-                // if the device has a supported GPU, add the GPU delegate
+        val interpreterOptionsGpu = Interpreter.Options().apply {
                 val delegateOptions = compatList.bestOptionsForThisDevice
                 addDelegate(GpuDelegate(delegateOptions))
-            } else {
-                setNumThreads(THREADS_NUM)
-                setUseXNNPACK(true)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    setUseNNAPI(true)
-                    Timber.i("NNAPI acceleration is included")
-                }
+        }
+
+        val interpreterOptionsCpu = Interpreter.Options().apply {
+            setNumThreads(THREADS_NUM)
+            setUseXNNPACK(true)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                setUseNNAPI(true)
+                Timber.i("NNAPI acceleration is included")
             }
         }
-        interpreter = Interpreter(FileUtil.loadMappedFile(context, MODEL_NAME), interpreterOptions)
+
+        interpreter = if(gpu){
+            try {
+                Interpreter(FileUtil.loadMappedFile(context, MODEL_NAME), interpreterOptionsGpu)
+            } catch (e: Exception){
+                Toast.makeText(context, "Failed to load model on GPU running on CPU", Toast.LENGTH_LONG).show()
+                Interpreter(FileUtil.loadMappedFile(context, MODEL_NAME), interpreterOptionsCpu)
+            }
+        } else {
+            Interpreter(FileUtil.loadMappedFile(context, MODEL_NAME), interpreterOptionsCpu)
+        }
+
     }
 
     fun inference(inputImage: Bitmap): InferenceOutput {

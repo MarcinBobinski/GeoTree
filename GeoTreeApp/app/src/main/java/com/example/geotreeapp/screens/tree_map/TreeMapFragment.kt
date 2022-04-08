@@ -35,6 +35,7 @@ import android.widget.TextView
 import android.view.Gravity
 
 import android.widget.LinearLayout
+import com.example.geotreeapp.constants.Preferences
 import com.example.geotreeapp.tree.tree_db.infrastructure.TreeStatus
 import com.google.android.gms.maps.GoogleMap.InfoWindowAdapter
 
@@ -61,7 +62,6 @@ class TreeMapFragment : Fragment(), OnMapReadyCallback {
         private const val MAP_POSITION = "MapPosition"
         private val DEFAULT_LOCATION = LatLng(52.237049, 21.017532)
         private const val DEFAULT_ZOOM = 11f
-        private const val MAX_NUMBER_OF_DISPLAYED_TREES = 150
 
         private const val LAT = "Lat"
         private const val LNG = "Lng"
@@ -117,6 +117,9 @@ class TreeMapFragment : Fragment(), OnMapReadyCallback {
     }
 
     override fun onMapReady(map: GoogleMap) {
+        val sharedPreferences =  requireActivity().getSharedPreferences(Preferences.NAME, Context.MODE_PRIVATE)
+        val maxNumberOfDisplayedTrees = Preferences.MAX_OBJECTS.run { sharedPreferences.getInt(first, second) }
+
         getCameraPosition().let {
             map.moveCamera(
                 CameraUpdateFactory.newLatLngZoom(
@@ -178,7 +181,7 @@ class TreeMapFragment : Fragment(), OnMapReadyCallback {
                             prepareMarkerOptions(it, bitmapDescriptors[it.treeStatus]!!) to it
                         }
 
-                    displayedMarkers = if (it.size < MAX_NUMBER_OF_DISPLAYED_TREES) {
+                    displayedMarkers = if (it.size < maxNumberOfDisplayedTrees) {
                         val newAddedMarkers = newMarkersToAdd.keys.associate {
                             map.addMarker(it)!! to newMarkersToAdd[it]!!
                         }
